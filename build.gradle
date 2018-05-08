@@ -1,0 +1,30 @@
+group 'com.newc.asset'
+version '0.0.1-SNAPSHOT'
+
+apply plugin: 'java'
+
+repositories {
+    mavenLocal()
+    maven { url "http://maven.aliyun.com/nexus/content/groups/public/"}
+}
+
+// upload jar file to local maven repositories.
+apply plugin: 'maven'
+def localMavenRepo = 'file://' + new File(System.getProperty('user.home'), '.m2/repository').absolutePath
+task sourceJar(type: Jar, dependsOn: classes) {
+    classifier = 'sources'
+    from sourceSets.main.allSource
+}
+uploadArchives {
+    repositories {
+        mavenDeployer {
+            repository(url: localMavenRepo)
+
+            pom.project {
+                name = project.name
+                packaging = 'jar'
+                description = 'The framework of all other project.'
+            }
+        }
+    }
+}
