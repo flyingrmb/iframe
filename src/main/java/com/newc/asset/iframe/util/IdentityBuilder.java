@@ -149,7 +149,7 @@ public class IdentityBuilder {
 
             for (T serialItem : serial) {
                 Entry entry = (Entry)serialItem;
-                Object value = Reflection.getChild(object, (String)entry.getKey());
+                Object value = PropertyGetter.get(object, (String)entry.getKey());
                 if (!entry.getValue().equals(value)) return false;
             }
 
@@ -161,10 +161,20 @@ public class IdentityBuilder {
 
             Object[] items = new Object[serial.length];
             for (int i=0; i<serial.length; i++) {
-                items[i] = Reflection.getChild(object, (String)serial[i]);
+                items[i] = PropertyGetter.get(object, (String)serial[i]);
             }
 
             return new Impl(items);
+        }
+
+        @Override
+        public void set(Object object) {
+            if (object == null) return ;
+
+            for (Object value : this.serial) {
+                Entry<String, Object> entry = (Entry<String, Object>)value;
+                Reflection.set(object, entry.getKey(), entry.getValue());
+            }
         }
 
         /**

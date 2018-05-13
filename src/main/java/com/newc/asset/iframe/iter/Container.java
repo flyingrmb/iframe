@@ -1,18 +1,17 @@
 package com.newc.asset.iframe.iter;
 
+import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
 import com.newc.asset.iframe.entity.Identity;
 import com.newc.asset.iframe.entity.ZipSide;
 import com.newc.asset.iframe.util.Reflection;
 import org.springframework.util.Assert;
 
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
 import static com.newc.asset.iframe.util.IdentityBuilder.MetaIdentity;
+import static com.newc.asset.iframe.util.IdentityBuilder.VoidIdentity;
 
 /**
  * Created by paul on 2018/5/10.
@@ -56,12 +55,48 @@ public class Container {
         Set<Object> result = get(path, kvs);
         if (result != null) return result;
 
-        // result == null this means we have not traversal the model with `path` and `kvs`
-        // So let's do it now
-        update(path, kvs.unzip(ZipSide.Left), append);
+        // result == null this means we have not traversal the model with `path` and `kvs`, so let's do it now
+        if (append) append(path, kvs); // In append mode, we should add a new object in model when it does not exist.
+
+        update(path, kvs.unzip(ZipSide.Left));
 
         // and now, we try to get the result again for the reason that we have constructed it again.
         return get(path, kvs);
+    }
+
+    private void append(String path, Identity kvs) {
+        if (kvs == MetaIdentity || kvs == VoidIdentity) {
+            appendObject(path);
+            return ;
+        }
+
+        appendList(path, kvs);
+    }
+
+    private void appendObject(String path) {
+        // The search function will help us do all the things we need here.
+        Reflection.search(model, path);
+    }
+
+    private void appendList(String path, Identity kvs) {
+        List<Object> exists = (List<Object>)Reflection.getReference(model, path);
+        if (exists == null) exists = new ArrayList<Object>();
+        if (contains(exists, kvs)) return; // Okay, nothing else should do.
+
+        JSONObject element = new JSONObject();
+        kvs.set(element);
+
+        exists.add(element);
+        Reflection.set(model, path, exists);
+    }
+
+    private boolean contains(List<Object> collection, Identity kvs) {
+        if (collection == null) return false;
+
+        for (Object object : collection)
+            if (kvs.matches(object)) return true;
+
+        return false;
     }
 
     /**
@@ -80,23 +115,10 @@ public class Container {
     }
 
     public void update(String path, Identity names) {
-        update(path, names, false); // Do not add anything new in the model.
-    }
-
-    public void update(String path, Identity names, boolean append) {
         Assert.notNull(path, "path should not be null.");
         Assert.notNull(names, "names should not be null.");
 
         List<Object> total = Reflection.getAll(model, path);
-        Assert.notNull(total, "Total should never be null.");
-
-        // This means we did not find anything in the path
-        if (total.isEmpty()) {
-            if (append) { // This means that we want to add a node in the model when we find nothing
-                Object added = Reflection.search(model, path);
-                total.add(added);
-            }
-        }
 
         for (Object element : total) {
             updateGroup(path, MetaIdentity, element); // update the all category.
