@@ -1,6 +1,7 @@
 package com.ppmoney.asset.iframe.factory;
 
 
+import lombok.Setter;
 import org.apache.commons.dbcp2.BasicDataSource;
 import org.springframework.beans.factory.FactoryBean;
 import org.springframework.lang.Nullable;
@@ -11,6 +12,7 @@ import javax.validation.constraints.NotNull;
 /**
  * Created by paul on 2018/5/20.
  */
+@Setter
 public class DataSourceFactory implements FactoryBean<DataSource> {
     @NotNull private String driverClassName;
 
@@ -25,10 +27,10 @@ public class DataSourceFactory implements FactoryBean<DataSource> {
     @Override
     public DataSource getObject() throws Exception {
         BasicDataSource dataSource = new BasicDataSource();
-        dataSource.setDriverClassName("org.postgresql.Driver");
-        dataSource.setUrl("jdbc:postgresql://localhost/stg");
-        dataSource.setUsername("ppmoney");
-        dataSource.setPassword("ppmoney");
+        dataSource.setDriverClassName(driverClassName);
+        dataSource.setUrl(url);
+        dataSource.setUsername(username);
+        dataSource.setPassword(password);
 
         return dataSource;
     }
